@@ -21,7 +21,7 @@ import json
 import os
 import logging
 import boto3
-import phonenumbers
+# import phonenumbers
 
 # Import the VMX Model Types
 import sub_connect_task

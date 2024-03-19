@@ -15,10 +15,9 @@
  *  IN THE SOFTWARE.                                                                                                  *
  **********************************************************************************************************************
 """
-import json
-import boto3
-import logging
 import os
+import logging
+import boto3
 
 ses_client = boto3.client('sesv2')
 logger = logging.getLogger()

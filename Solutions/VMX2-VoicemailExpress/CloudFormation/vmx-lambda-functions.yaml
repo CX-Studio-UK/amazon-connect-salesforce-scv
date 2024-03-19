@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 
 Description: Deploys the Voicemail Express Lambda functions.
 
@@ -51,8 +51,6 @@ Parameters:
     Type: String
   VMXDefaultTaskFlow:
     Type: String
-  VMXSecrets:
-    Type: String
   VMXCoreRoleArn:
     Type: String
   VMXCoreRole:
@@ -76,82 +74,78 @@ Mappings:
       mode: other
 
 Conditions:
-  SalesforceEnabled: !Or [!Equals [!Ref EnableVMToSalesforceCase, yes], !Equals [!Ref EnableVMToSalesforceCustomObject, yes] ]
-  SalesforceNotEnabled: !And [!Equals [!Ref EnableVMToSalesforceCase, no], !Equals [!Ref EnableVMToSalesforceCustomObject, no] ]
+  SalesforceEnabled:
+    !Or [
+      !Equals [!Ref EnableVMToSalesforceCase, yes],
+      !Equals [!Ref EnableVMToSalesforceCustomObject, yes],
+    ]
+  SalesforceNotEnabled:
+    !And [
+      !Equals [!Ref EnableVMToSalesforceCase, no],
+      !Equals [!Ref EnableVMToSalesforceCustomObject, no],
+    ]
   SalesforceOtherEnabled: !Equals [!Ref EnableVMToSalesforceCustomObject, yes]
   ConnectTasksEnabled: !Equals [!Ref EnableVMToConnectTask, yes]
   OtherEnabled: !Equals [!Ref EnableVMToConnectTask, yes]
   AWSEmailEnabled: !Equals [!Ref EnableVMToEmail, yes]
 
 Resources:
-  VMXPythonLayer:
-    Type: AWS::Lambda::LayerVersion
-    Condition: SalesforceNotEnabled
-    Properties:
-      CompatibleRuntimes:
-        - python3.11
-      Content:
-        S3Bucket:
-          !Join
-            - ''
-            - - !Ref EXPDevBucketPrefix
-              - 'connectbd-sc-'
-              - !Ref AWSRegion
-        S3Key:
-          !Join
-          - ''
-          - - 'sf_config/'
-            - !Ref EXPTemplateVersion
-            - /zip/awsscv_common_python.zip
-      Description: Provides dependencies code and functions for Python Lambda functions that augment the Service Cloud Voice offering from Salesforce
-      LayerName: !Join
-        - ''
-        - - 'common_python_layer_'
-          - !Ref ConnectInstanceAlias
-      LicenseInfo: https://aws.amazon.com/apache-2-0
+  # VMXPythonLayer:
+  #   Type: AWS::Lambda::LayerVersion
+  #   Condition: SalesforceNotEnabled
+  #   Properties:
+  #     CompatibleRuntimes:
+  #       - python3.11
+  #     Content:
+  #       S3Bucket:
+  #         !Join
+  #           - ''
+  #           - - !Ref EXPDevBucketPrefix
+  #             - 'connectbd-sc-'
+  #             - !Ref AWSRegion
+  #       S3Key:
+  #         !Join
+  #         - ''
+  #         - - 'sf_config/'
+  #           - !Ref EXPTemplateVersion
+  #           - /zip/awsscv_common_python.zip
+  #     Description: Provides dependencies code and functions for Python Lambda functions that augment the Service Cloud Voice offering from Salesforce
+  #     LayerName: !Join
+  #       - ''
+  #       - - 'common_python_layer_'
+  #         - !Ref ConnectInstanceAlias
+  #     LicenseInfo: https://aws.amazon.com/apache-2-0
 
-  VMXNodeLayer:
-    Type: AWS::Lambda::LayerVersion
-    Condition: SalesforceNotEnabled
-    Properties:
-      CompatibleRuntimes:
-        - nodejs18.x
-      Content:
-        S3Bucket:
-          !Join
-            - ''
-            - - !Ref EXPDevBucketPrefix
-              - 'connectbd-sc-'
-              - !Ref AWSRegion
-        S3Key:
-          !Join
-          - ''
-          - - 'sf_config/'
-            - !Ref EXPTemplateVersion
-            - /zip/awsscv_common_node.zip
-      Description: Provides dependencies code and functions for Node.js Lambda functions that augment the Service Cloud Voice offering from Salesforce
-      LayerName: !Join
-        - ''
-        - - 'common_node_layer_'
-          - !Ref ConnectInstanceAlias
-      LicenseInfo: https://aws.amazon.com/apache-2-0
+  # VMXNodeLayer:
+  #   Type: AWS::Lambda::LayerVersion
+  #   Condition: SalesforceNotEnabled
+  #   Properties:
+  #     CompatibleRuntimes:
+  #       - nodejs18.x
+  #     Content:
+  #       S3Bucket:
+  #         !Join
+  #           - ''
+  #           - - !Ref EXPDevBucketPrefix
+  #             - 'connectbd-sc-'
+  #             - !Ref AWSRegion
+  #       S3Key:
+  #         !Join
+  #         - ''
+  #         - - 'sf_config/'
+  #           - !Ref EXPTemplateVersion
+  #           - /zip/awsscv_common_node.zip
+  #     Description: Provides dependencies code and functions for Node.js Lambda functions that augment the Service Cloud Voice offering from Salesforce
+  #     LayerName: !Join
+  #       - ''
+  #       - - 'common_node_layer_'
+  #         - !Ref ConnectInstanceAlias
+  #     LicenseInfo: https://aws.amazon.com/apache-2-0
 
   VMXPresigner:
     Type: AWS::Lambda::Function
     Properties:
-      Code:
-        S3Bucket:
-          !Join
-            - ''
-            - - !Ref EXPDevBucketPrefix
-              - 'connectbd-sc-'
-              - !Ref AWSRegion
-        S3Key:
-          !Join
-          - ''
-          - - 'vmx/'
-            - !Ref EXPTemplateVersion
-            - /zip/vmx_presigner.py.zip
+      Code: ../Code/vmx_presigner.py
       Description: Generates the presigned URL that provides authenticated access to the voicemail recording in S3
       Environment:
         Variables:
@@ -161,15 +155,12 @@ Resources:
             Ref: LambdaLoggingLevel
           s3_obj_lifecycle:
             Ref: RecordingsExpireInXDays
-          secrets_key_id:
-            Ref: VMXSecrets
           package_version:
             Ref: EXPTemplateVersion
-      FunctionName:
-        !Join
-            - ''
-            - - 'VMXPresigner-'
-              - !Ref ConnectInstanceAlias
+      FunctionName: !Join
+        - ''
+        - - 'VMXPresigner-'
+          - !Ref ConnectInstanceAlias
       Handler: vmx_presigner.lambda_handler
       Role: !Ref VMXCoreRoleArn
       Runtime: python3.11
@@ -178,19 +169,7 @@ Resources:
   VMXPackager:
     Type: AWS::Lambda::Function
     Properties:
-      Code:
-        S3Bucket:
-          !Join
-            - ''
-            - - !Ref EXPDevBucketPrefix
-              - 'connectbd-sc-'
-              - !Ref AWSRegion
-        S3Key:
-          !Join
-          - ''
-          - - 'vmx/'
-            - !Ref EXPTemplateVersion
-            - /zip/vmx_packager.py.zip
+      Code: ../Code/vmx_packager.py
       Description: Packages the voicemail and creates a task in Amazon Connect.
       Environment:
         Variables:
@@ -207,73 +186,86 @@ Resources:
           package_version:
             Ref: EXPTemplateVersion
           sf_vmx_custom_object:
-            !If [SalesforceOtherEnabled, !Ref SalesforceCustomObject, 'AWS::NoValue']
+            !If [
+              SalesforceOtherEnabled,
+              !Ref SalesforceCustomObject,
+              'AWS::NoValue',
+            ]
           sf_config_sm_arn:
             !If [SalesforceEnabled, !Ref SalesforceConfigSSMARN, 'AWS::NoValue']
           sf_vmx_field:
-            !If [SalesforceEnabled, !Ref SalesforceVoicemailLinkField, 'AWS::NoValue']
+            !If [
+              SalesforceEnabled,
+              !Ref SalesforceVoicemailLinkField,
+              'AWS::NoValue',
+            ]
           sf_vmx_phone_field:
-            !If [SalesforceEnabled, !Ref SalesforceCallbackPhoneField, 'AWS::NoValue']
+            !If [
+              SalesforceEnabled,
+              !Ref SalesforceCallbackPhoneField,
+              'AWS::NoValue',
+            ]
           sf_vmx_attributes:
-            !If [SalesforceEnabled, !Ref SalesforceContactAttributesField, 'AWS::NoValue']
+            !If [
+              SalesforceEnabled,
+              !Ref SalesforceContactAttributesField,
+              'AWS::NoValue',
+            ]
           sf_vmx_transcript:
-            !If [SalesforceOtherEnabled, !Ref SalesforceTranscriptsField, 'AWS::NoValue']
+            !If [
+              SalesforceOtherEnabled,
+              !Ref SalesforceTranscriptsField,
+              'AWS::NoValue',
+            ]
           default_email_from:
             !If [AWSEmailEnabled, !Ref VMToEmailDefaultFrom, 'AWS::NoValue']
           default_email_target:
             !If [AWSEmailEnabled, !Ref VMToEmailDefaultTo, 'AWS::NoValue']
-          default_vmx_mode:
-            !FindInMap [VMModes, !Ref "VMDefaultMode", mode]
+          default_vmx_mode: !FindInMap [VMModes, !Ref 'VMDefaultMode', mode]
           default_agent_email_template:
-            !If [AWSEmailEnabled, !Ref VMEmailDefaultAgentTemplate, 'AWS::NoValue']
+            !If [
+              AWSEmailEnabled,
+              !Ref VMEmailDefaultAgentTemplate,
+              'AWS::NoValue',
+            ]
           default_queue_email_template:
-            !If [AWSEmailEnabled, !Ref VMEmailDefaultQueueTemplate, 'AWS::NoValue']
-      FunctionName:
-        !Join
-            - ''
-            - - 'VMXPackager-'
-              - !Ref ConnectInstanceAlias
+            !If [
+              AWSEmailEnabled,
+              !Ref VMEmailDefaultQueueTemplate,
+              'AWS::NoValue',
+            ]
+      FunctionName: !Join
+        - ''
+        - - 'VMXPackager-'
+          - !Ref ConnectInstanceAlias
       Handler: vmx_packager.lambda_handler
       Role: !Ref VMXCoreRoleArn
-      Layers: !If [SalesforceNotEnabled, [!Ref VMXPythonLayer], [!Ref PythonLayerARN]]
+      # Layers:
+      #   !If [SalesforceNotEnabled, [!Ref VMXPythonLayer], [!Ref PythonLayerARN]]
       Runtime: python3.11
       Timeout: 900
 
   VMXTranscriber:
     Type: AWS::Lambda::Function
     Properties:
-      Code:
-        S3Bucket:
-          !Join
-            - ''
-            - - !Ref EXPDevBucketPrefix
-              - 'connectbd-sc-'
-              - !Ref AWSRegion
-        S3Key:
-          !Join
-          - ''
-          - - 'vmx/'
-            - !Ref EXPTemplateVersion
-            - /zip/vmx_transcriber.py.zip
+      Code: ../Code/vmx_transcriber.py
       Description: Transcribes the voicemail to text and stores the transcription in S3
       Environment:
         Variables:
           aws_region:
             Ref: AWSRegion
-          s3_transcripts_bucket:
-            !Join
-              - ''
-              - - 'vmxtranscripts-'
-                - !Ref ConnectInstanceAlias
+          s3_transcripts_bucket: !Join
+            - ''
+            - - 'vmxtranscripts-'
+              - !Ref ConnectInstanceAlias
           lambda_logging_level:
             Ref: LambdaLoggingLevel
           package_version:
             Ref: EXPTemplateVersion
-      FunctionName:
-        !Join
-            - ''
-            - - 'VMXTranscriber-'
-              - !Ref ConnectInstanceAlias
+      FunctionName: !Join
+        - ''
+        - - 'VMXTranscriber-'
+          - !Ref ConnectInstanceAlias
       Handler: vmx_transcriber.lambda_handler
       Role: !Ref VMXCoreRoleArn
       Runtime: python3.11
@@ -282,19 +274,7 @@ Resources:
   VMXKVStoS3:
     Type: AWS::Lambda::Function
     Properties:
-      Code:
-        S3Bucket:
-          !Join
-            - ''
-            - - !Ref EXPDevBucketPrefix
-              - 'connectbd-sc-'
-              - !Ref AWSRegion
-        S3Key:
-          !Join
-          - ''
-          - - 'vmx/'
-            - !Ref EXPTemplateVersion
-            - /zip/vmx_kvs_to_s3.js.zip
+      Code: ../Code/vmx_kvs_to_s3.js
       Description: Extracts the voicemail from the KVS stream and writes it to S3 with tag data
       Environment:
         Variables:
@@ -306,21 +286,21 @@ Resources:
             Ref: LambdaLoggingLevel
           package_version:
             Ref: EXPTemplateVersion
-      FunctionName:
-        !Join
-            - ''
-            - - 'VMXKVStoS3-'
-              - !Ref ConnectInstanceAlias
+      FunctionName: !Join
+        - ''
+        - - 'VMXKVStoS3-'
+          - !Ref ConnectInstanceAlias
       Handler: vmx_kvs_to_s3.handler
       Role: !Ref VMXCoreRoleArn
-      Layers: !If [SalesforceNotEnabled, [!Ref VMXNodeLayer], [!Ref NodeLayerARN]]
+      # Layers:
+      #   !If [SalesforceNotEnabled, [!Ref VMXNodeLayer], [!Ref NodeLayerARN]]
       Runtime: nodejs18.x
       Timeout: 900
 
   VMXAddOnPolicy:
     Type: AWS::IAM::ManagedPolicy
     DependsOn:
-        - VMXPresigner
+      - VMXPresigner
     Properties:
       PolicyDocument:
         Version: 2012-10-17
@@ -341,25 +321,17 @@ Resources:
               - 'connect:StartTaskContact'
             Resource:
               - '*'
-          - Effect: Allow
-            Action:
-              - 'secretsmanager:GetSecretValue'
-              - 'secretsmanager:DescribeSecret'
-              - 'secretsmanager:ListSecretVersionIds'
-            Resource:
-              - !Ref VMXSecrets
-      ManagedPolicyName:
-        !Join
-          - ''
-          - - 'VMXCorePolicy-'
-            - !Ref ConnectInstanceAlias
+      ManagedPolicyName: !Join
+        - ''
+        - - 'VMXCorePolicy-'
+          - !Ref ConnectInstanceAlias
       Roles:
         - !Ref VMXCoreRole
 
   VMXSFPolicy:
     Type: AWS::IAM::ManagedPolicy
     DependsOn:
-        - VMXAddOnPolicy
+      - VMXAddOnPolicy
     Properties:
       PolicyDocument:
         Version: 2012-10-17
@@ -372,11 +344,10 @@ Resources:
               - 'secretsmanager:UpdateSecret'
             Resource:
               - !Ref SalesforceConfigSSMARN
-      ManagedPolicyName:
-        !Join
-          - ''
-          - - 'VMXSFPolicy-'
-            - !Ref ConnectInstanceAlias
+      ManagedPolicyName: !Join
+        - ''
+        - - 'VMXSFPolicy-'
+          - !Ref ConnectInstanceAlias
       Roles:
         - !Ref VMXCoreRole
 

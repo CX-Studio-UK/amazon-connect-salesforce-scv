@@ -21,7 +21,7 @@ import json
 import os
 import logging
 import boto3
-import phonenumbers
+# import phonenumbers
 from awsscv.sf import Salesforce
 
 logger = logging.getLogger()

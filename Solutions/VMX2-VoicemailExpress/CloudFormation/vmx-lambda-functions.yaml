@@ -143,9 +143,9 @@ Resources:
   #     LicenseInfo: https://aws.amazon.com/apache-2-0
 
   VMXPresigner:
-    Type: AWS::Lambda::Function
+    Type: AWS::Serverless::Function
     Properties:
-      Code: ../Code/vmx_presigner.py
+      CodeUri: ../Code/
       Description: Generates the presigned URL that provides authenticated access to the voicemail recording in S3
       Environment:
         Variables:
@@ -167,9 +167,9 @@ Resources:
       Timeout: 30
 
   VMXPackager:
-    Type: AWS::Lambda::Function
+    Type: AWS::Serverless::Function
     Properties:
-      Code: ../Code/vmx_packager.py
+      CodeUri: ../Code/
       Description: Packages the voicemail and creates a task in Amazon Connect.
       Environment:
         Variables:
@@ -246,9 +246,9 @@ Resources:
       Timeout: 900
 
   VMXTranscriber:
-    Type: AWS::Lambda::Function
+    Type: AWS::Serverless::Function
     Properties:
-      Code: ../Code/vmx_transcriber.py
+      CodeUri: ../Code/
       Description: Transcribes the voicemail to text and stores the transcription in S3
       Environment:
         Variables:
@@ -272,9 +272,9 @@ Resources:
       Timeout: 900
 
   VMXKVStoS3:
-    Type: AWS::Lambda::Function
+    Type: AWS::Serverless::Function
     Properties:
-      Code: ../Code/vmx_kvs_to_s3.js
+      CodeUri: ../Code/
       Description: Extracts the voicemail from the KVS stream and writes it to S3 with tag data
       Environment:
         Variables:

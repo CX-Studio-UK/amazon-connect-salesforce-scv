@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
 
 Description: Deploys the Voicemail Express Lambda functions.
 
@@ -90,58 +91,6 @@ Conditions:
   AWSEmailEnabled: !Equals [!Ref EnableVMToEmail, yes]
 
 Resources:
-  # VMXPythonLayer:
-  #   Type: AWS::Lambda::LayerVersion
-  #   Condition: SalesforceNotEnabled
-  #   Properties:
-  #     CompatibleRuntimes:
-  #       - python3.11
-  #     Content:
-  #       S3Bucket:
-  #         !Join
-  #           - ''
-  #           - - !Ref EXPDevBucketPrefix
-  #             - 'connectbd-sc-'
-  #             - !Ref AWSRegion
-  #       S3Key:
-  #         !Join
-  #         - ''
-  #         - - 'sf_config/'
-  #           - !Ref EXPTemplateVersion
-  #           - /zip/awsscv_common_python.zip
-  #     Description: Provides dependencies code and functions for Python Lambda functions that augment the Service Cloud Voice offering from Salesforce
-  #     LayerName: !Join
-  #       - ''
-  #       - - 'common_python_layer_'
-  #         - !Ref ConnectInstanceAlias
-  #     LicenseInfo: https://aws.amazon.com/apache-2-0
-
-  # VMXNodeLayer:
-  #   Type: AWS::Lambda::LayerVersion
-  #   Condition: SalesforceNotEnabled
-  #   Properties:
-  #     CompatibleRuntimes:
-  #       - nodejs18.x
-  #     Content:
-  #       S3Bucket:
-  #         !Join
-  #           - ''
-  #           - - !Ref EXPDevBucketPrefix
-  #             - 'connectbd-sc-'
-  #             - !Ref AWSRegion
-  #       S3Key:
-  #         !Join
-  #         - ''
-  #         - - 'sf_config/'
-  #           - !Ref EXPTemplateVersion
-  #           - /zip/awsscv_common_node.zip
-  #     Description: Provides dependencies code and functions for Node.js Lambda functions that augment the Service Cloud Voice offering from Salesforce
-  #     LayerName: !Join
-  #       - ''
-  #       - - 'common_node_layer_'
-  #         - !Ref ConnectInstanceAlias
-  #     LicenseInfo: https://aws.amazon.com/apache-2-0
-
   VMXPresigner:
     Type: AWS::Serverless::Function
     Properties:
@@ -240,8 +189,6 @@ Resources:
           - !Ref ConnectInstanceAlias
       Handler: vmx_packager.lambda_handler
       Role: !Ref VMXCoreRoleArn
-      # Layers:
-      #   !If [SalesforceNotEnabled, [!Ref VMXPythonLayer], [!Ref PythonLayerARN]]
       Runtime: python3.11
       Timeout: 900
 

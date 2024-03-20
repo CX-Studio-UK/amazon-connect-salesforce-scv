@@ -83,7 +83,6 @@ def lambda_handler(event, context):
             Bucket = recording_bucket,
             Key = recording_key
         )
-
         object_tags = object_data['TagSet']
         loaded_tags = {}
 

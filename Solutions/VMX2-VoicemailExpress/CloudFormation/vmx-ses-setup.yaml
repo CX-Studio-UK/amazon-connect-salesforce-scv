@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
 
 Description: Deploys the Voicemail Express SES email templates and consolidated Lambda for managing templates.
 
@@ -42,9 +43,9 @@ Resources:
         HtmlPart: '<h1>Voicemail for {{entity_name}} </h1><p>There is a voicemail from {{callback_number}}.</p><p><a href="{{presigned_url}}">Listen to the voicemail.</a></p><h2>Voicemail transcription</h2><p>{{transcript_contents}}</p>'
 
   VMXSESTools:
-    Type: AWS::Lambda::Function
+    Type: AWS::Serverless::Function
     Properties:
-      Code: ../Code/vmx_ses_template_tool.py
+      CodeUri: ../Code/
       Description: Provides prebuilt function to manage email templates
       Environment:
         Variables:

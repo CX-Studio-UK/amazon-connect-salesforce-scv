@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 
 Description: Deploys the Voicemail Express content triggers.
 
@@ -65,15 +65,15 @@ Resources:
           bucket:
             name:
               - !Ref VMXS3RecordingsBucket
-      Name: !Join [ "-", [ !Ref ConnectInstanceAlias,TranscriberRule ] ]
+      Name: !Join ['-', [!Ref ConnectInstanceAlias, TranscriberRule]]
       State: ENABLED
       Targets:
-        - Id: !Join [ "-", [ !Ref ConnectInstanceAlias,TranscriberFunction ] ]
+        - Id: !Join ['-', [!Ref ConnectInstanceAlias, TranscriberFunction]]
           Arn: !Ref VMXTranscriberArn
 
   TrasncriberLambdaPermission:
     Type: AWS::Lambda::Permission
-    Properties: 
+    Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref VMXTranscriberArn
       Principal: events.amazonaws.com
@@ -93,15 +93,15 @@ Resources:
           bucket:
             name:
               - !Ref VMXS3TranscriptsBucket
-      Name: !Join [ "-", [ !Ref ConnectInstanceAlias,PackagerRule ] ]
+      Name: !Join ['-', [!Ref ConnectInstanceAlias, PackagerRule]]
       State: ENABLED
-      Targets: 
-        - Id: !Join [ "-", [ !Ref ConnectInstanceAlias,PackagerFunction ] ]
+      Targets:
+        - Id: !Join ['-', [!Ref ConnectInstanceAlias, PackagerFunction]]
           Arn: !Ref VMXPackagerArn
-          
+
   PackagerLambdaPermission:
     Type: AWS::Lambda::Permission
-    Properties: 
+    Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref VMXPackagerArn
       Principal: events.amazonaws.com

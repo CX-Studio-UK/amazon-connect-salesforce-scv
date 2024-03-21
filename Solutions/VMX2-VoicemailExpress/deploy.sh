@@ -46,6 +46,5 @@ sam deploy --profile "$AWS_DEFAULT_PROFILE"\
     VMToEmailDefaultTo=$VM_TO_EMAIL_DEFAULT_TO \
     VMTestAgentId=$VM_TEST_AGENT_ID \
     VMTestQueueARN=$VM_TEST_QUEUE_ARN \
-    RecordingsExpireInXDays=$RECORDINGS_EXPIRE_IN_X_DAYS \
   --disable-rollback
 

@@ -64,10 +64,8 @@ exports.handler = async (event) => {
         let currentTagString = '';
         let currentFragment = BigInt(0);
 
-        console.log("record",record);
         // Increment record counter
         totalRecordCount = totalRecordCount + 1
-        console.log('Starting record #' + totalRecordCount)
 
         // Grab the data from the event for the record, decode it, grab the attributes we need, and check if this is a voicemail to process
         try {
@@ -75,7 +73,6 @@ exports.handler = async (event) => {
             const payload = Buffer.from(record.kinesis.data, 'base64').toString();
             var vmrecord = JSON.parse(payload);
             // Uncomment the following line for debugging
-            console.log(vmrecord)
             // Grab ContactID & Instance ARN
             var currentContactID = vmrecord.ContactId;
         } catch(e) {
@@ -110,10 +107,6 @@ exports.handler = async (event) => {
             var startFragmentNum = BigInt(vmrecord.Recordings[0].FragmentStartNumber);
             var stopFragmentNum = BigInt(vmrecord.Recordings[0].FragmentStopNumber);
             var streamName = vmrecord.Recordings[0].Location.substring(streamARN.indexOf("/") + 1, streamARN.lastIndexOf("/"));
-            console.log("streamArn",streamARN);
-            console.log("streamName", streamName);
-            console.log("startFragmentNum", startFragmentNum);
-            console.log("stopFragmentNum", stopFragmentNum);
         } catch(e) {
             console.log('FAIL: Counld not identify KVS info');
             responseContainer['record' + totalRecordCount + 'result'] = 'Failed to extract KVS info';
@@ -129,9 +122,7 @@ exports.handler = async (event) => {
                     attr_tag_container = attr_tag_container + ('' + key + '=' + attr_data[key] + '&');
                 };
             });
-            console.log("attr_tag_container", attr_tag_container);
             attr_tag_container = attr_tag_container.replace(/&\s*$/, '');
-            console.log("attr_tag_container", attr_tag_container);
         } catch(e) {
             console.log('FAIL: Counld not extract vm tags');
             responseContainer['record' + totalRecordCount + 'result'] = 'Failed to extract vm tags';
@@ -154,10 +145,8 @@ exports.handler = async (event) => {
 
                 const {name, value} = chunk[1];
 
-                console.log(`Examining a chunk named: ${name}`);
 
                 if (shouldProcessKvs) {
-                    console.log("shouldProcessKvs",shouldProcessKvs);
                     switch (name) {
                         case 'TagName':
                             /**
@@ -236,7 +225,6 @@ exports.handler = async (event) => {
                     Tagging: attr_tag_container
                 };
                 var out = await s3.putObject(s3_params).promise();
-                console.log("out",out);
                 // Whack the data so we have a clean start point
                 s3ObjectData = []
                 wavBufferArray = []

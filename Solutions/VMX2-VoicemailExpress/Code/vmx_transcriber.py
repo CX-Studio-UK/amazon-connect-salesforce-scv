@@ -15,25 +15,28 @@
  *  IN THE SOFTWARE.                                                                                                  *
  **********************************************************************************************************************
 """
-import json
 import boto3
 import os
 import logging
 
 logger = logging.getLogger()
-logger.setLevel(logging.getLevelName(os.getenv('lambda_logging_level', 'INFO')))
+logger.setLevel(logging.getLevelName(os.getenv('lambda_logging_level', 'DEBUG')))
 
 def lambda_handler(event, context):
-    logger.debug(event)
+    logger.debug(": %s",event)
 
     # Grab incoming data elements from the S3 event
     try:
         recording_key = event['detail']['object']['key']
+        logger.debug('Record Result: Recording Key: %s', recording_key)
         recording_name = recording_key.replace('voicemail_recordings/','')
+        logger.debug('Record Result: Recording Name: %s', recording_name)
         contact_id = recording_name.replace('.wav','')
+        logger.debug('Record Result: Contact ID: %s', contact_id)
         recording_bucket = event['detail']['bucket']['name']
+        logger.debug('Record Result: Recording Bucket: %s', recording_bucket)
         recording_region = event['region']
-
+        logger.debug('Record Result: Recording Region: %s', recording_region)
     except Exception as e:
         logger.error(e)
         logger.debug('Record Result: Failed to extract data from event')
@@ -46,12 +49,15 @@ def lambda_handler(event, context):
             Bucket=recording_bucket,
             Key=recording_key
         )
+        logger.debug('Record Result: Object Data: %s', object_data)
 
         object_tags = object_data['TagSet']
+        logger.debug('Record Result: Object Tags: %s', object_tags)
         loaded_tags = {}
 
         for i in object_tags:
             loaded_tags.update({i['Key']:i['Value']})
+            logger.debug('Record Result: Loaded tags: %s', loaded_tags)
 
     except Exception as e:
         logger.error(e)
@@ -61,6 +67,7 @@ def lambda_handler(event, context):
     # Build the Recording URL
     try:
         recording_url = 'https://{0}.s3-{1}.amazonaws.com/{2}'.format(recording_bucket, recording_region, recording_key)
+        logger.debug('Record Result: Recording URL: %s', recording_url)
 
     except Exception as e:
         logger.error(e)
@@ -71,7 +78,7 @@ def lambda_handler(event, context):
     try:
         # Esteablish the client
         transcribe_client = boto3.client('transcribe')
-
+        logger.debug('Record Result: LanguageCode: %s', loaded_tags['vmx_lang'])
         # Submit the transcription job
         transcribe_response = transcribe_client.start_transcription_job(
             TranscriptionJobName=contact_id,
@@ -82,6 +89,7 @@ def lambda_handler(event, context):
             },
             OutputBucketName=os.environ['s3_transcripts_bucket']
         )
+        logger.debug('Record Result: Transcription Response: %s', transcribe_response)
 
     except Exception as e:
         logger.error(e)

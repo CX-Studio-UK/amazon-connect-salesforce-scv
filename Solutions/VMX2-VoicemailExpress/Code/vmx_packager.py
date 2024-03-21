@@ -26,8 +26,8 @@ import boto3
 # Import the VMX Model Types
 import sub_connect_task
 import sub_ses_email
-import sub_salesforce_case
-import sub_salesforce_other
+# import sub_salesforce_case
+# import sub_salesforce_other
 import sub_other
 
 logger = logging.getLogger()
@@ -35,7 +35,7 @@ logger.setLevel(logging.getLevelName(os.getenv('lambda_logging_level', 'DEBUG'))
 connect_client = boto3.client('connect')
 
 def lambda_handler(event, context):
-    logger.debug(event)
+    logger.debug("event triggered: %s",event)
 
     # Process the record
     # Establish writer data
@@ -49,6 +49,7 @@ def lambda_handler(event, context):
         transcript_bucket = os.environ['s3_transcripts_bucket']
         recording_bucket = os.environ['s3_recordings_bucket']
 
+        logger.debug('Record Result: Extracted transcript and recording keys: %s, %s, %s, %s, %s', transcript_key, recording_key, contact_id, transcript_bucket, recording_bucket)
     except Exception as e:
         logger.error(e)
         logger.error('Record Result: Failed to extract keys')
@@ -62,14 +63,16 @@ def lambda_handler(event, context):
             'recording_bucket': recording_bucket,
             'recording_key': recording_key
         }
-
+        logger.debug('Record Result: Invoking presigner Lambda with params: %s', input_params)
         lambda_response = client.invoke(
             FunctionName = os.environ['presigner_function_arn'],
             InvocationType = 'RequestResponse',
             Payload = json.dumps(input_params)
         )
         response_from_presigner = json.load(lambda_response['Payload'])
+        logger.debug('Record Result: Response from presigner Lambda: %s', response_from_presigner)
         raw_url = response_from_presigner['presigned_url']
+        logger.debug('Record Result: Raw URL: %s', raw_url)
 
     except Exception as e:
         logger.error(e)
@@ -83,12 +86,13 @@ def lambda_handler(event, context):
             Bucket = recording_bucket,
             Key = recording_key
         )
+        logger.debug('Record Result: Object data: %s', object_data)
         object_tags = object_data['TagSet']
         loaded_tags = {}
 
         for i in object_tags:
             loaded_tags.update({i['Key']:i['Value']})
-
+            logger.debug('Record Result: Loaded tags: %s', loaded_tags) 
     except Exception as e:
         logger.error(e)
         logger.error('Record Result: Failed to extract tags')
@@ -99,11 +103,14 @@ def lambda_handler(event, context):
         s3_resource = boto3.resource('s3')
 
         transcript_object = s3_resource.Object(transcript_bucket, transcript_key)
+        logger.debug('Record Result: Transcript object: %s', transcript_object)
         file_content = transcript_object.get()['Body'].read().decode('utf-8')
+        logger.debug('Record Result: Transcript content: %s', file_content)
         json_content = json.loads(file_content)
+        logger.debug('Record Result: Transcript JSON: %s', json_content)
 
         transcript_contents = json_content['results']['transcripts'][0]['transcript']
-
+        logger.debug('Record Result: Transcript contents: %s', transcript_contents)
     except Exception as e:
         logger.error(e)
         logger.error('Record Result: Failed to retrieve transcript')
@@ -111,26 +118,33 @@ def lambda_handler(event, context):
 
     # Set some key vars
     queue_arn = loaded_tags['vmx_queue_arn']
+    logger.debug('Record Result: Queue ARN: %s', queue_arn)
     arn_substring = queue_arn.split('instance/')[1]
+    logger.debug('Record Result: ARN substring: %s', arn_substring)
     instance_id = arn_substring.split('/queue')[0]
+    logger.debug('Record Result: Instance ID: %s', instance_id)
     queue_id = arn_substring.split('queue/')[1]
+    logger.debug('Record Result: Queue ID: %s', queue_id)
     writer_payload.update({'instance_id':instance_id,'contact_id':contact_id,'queue_id':queue_id})
-
+    logger.debug('Record Result: Writer Payload1: %s', writer_payload)
     # Determine queue type and set additional vars
     if queue_id.startswith('agent'):
         try:
             writer_payload.update({'entity_type':'agent'})
             # Set the Agent ID
             agent_id = arn_substring.split('agent/')[1]
+            logger.debug('Record Result: Agent ID: %s', agent_id)
             # Grab agent info
             get_agent = connect_client.describe_user(
                 UserId = agent_id,
                 InstanceId = instance_id
             )
+            logger.debug(get_agent)
             logger.debug(get_agent['User']['IdentityInfo'])
             entity_name = get_agent['User']['IdentityInfo']['FirstName']+' '+get_agent['User']['IdentityInfo']['LastName']
             entity_id = get_agent['User']['Username']
             entity_description = 'Amazon Connect Agent'
+            logger.debug('Record Result: Entity Name: %s', entity_name)
 
         except Exception as e:
             logger.error(e)
@@ -139,16 +153,20 @@ def lambda_handler(event, context):
 
     else:
         writer_payload.update({'entity_type':'queue'})
+        logger.debug('Record Result: writer_payload: %s', writer_payload)
         # Grab Queue info
         get_queue_details = connect_client.describe_queue(
             InstanceId=instance_id,
             QueueId=queue_id
         )
-
+        logger.debug("get_queue_details: %s",get_queue_details)
         try:
             entity_name = get_queue_details['Queue']['Name']
+            logger.debug('Record Result: Entity Name: %s', entity_name)
             entity_id = get_queue_details['Queue']['QueueArn']
+            logger.debug('Record Result: Entity ID: %s', entity_id)
             entity_description = get_queue_details['Queue']['Description']
+            logger.debug('Record Result: Entity Description: %s', entity_description)
         except Exception as e:
             logger.error(e)
             logger.error('Record Result: Failed to extract queue name')
@@ -160,30 +178,35 @@ def lambda_handler(event, context):
             InstanceId = instance_id,
             InitialContactId = contact_id
         )
+        logger.debug("contact attributes, %s",contact_attributes)
         json_attributes = contact_attributes['Attributes']
+        logger.debug("json attributes, %s", json_attributes)
         json_attributes.update({'entity_name':entity_name,'entity_id':entity_id,'entity_description':entity_description,'transcript_contents':transcript_contents,'callback_number':json_attributes['vmx_from'],'presigned_url':raw_url})
+        logger.debug("json attributes,%s", json_attributes)
         writer_payload.update({'json_attributes':json_attributes})
         contact_attributes = json.dumps(contact_attributes['Attributes'])
+        logger.debug("contact attributes, %s", contact_attributes)
 
     except Exception as e:
         logger.error(e)
         logger.error('Record Result: Failed to extract attributes')
         contact_attributes = 'UNKNOWN'
 
-    logger.debug(writer_payload)
+    logger.debug("writer_payload: %s",writer_payload)
 
     # Determing VMX mode
     if 'vmx_mode' in writer_payload['json_attributes']:
         if writer_payload['json_attributes']['vmx_mode']:
             vmx_mode = writer_payload['json_attributes']['vmx_mode']
+            logger.debug('VM Mode set to {0}.'.format(vmx_mode))
     else:
         vmx_mode = os.environ['default_vmx_mode']
+        logger.debug('VM Mode set to {0}.'.format(vmx_mode))
 
     logger.debug('VM Mode set to {0}.'.format(vmx_mode))
 
     # Execute the correct VMX mode
     if vmx_mode == 'task':
-
         try:
             write_vm = sub_connect_task.vmx_to_connect_task(writer_payload)
 
@@ -202,25 +225,25 @@ def lambda_handler(event, context):
             logger.error('Failed to activate email function')
             return {'result':'Failed to activate email function'}
 
-    elif vmx_mode == 'sfcase':
-        # Set case Here
-        try:
-            write_vm = sub_salesforce_case.vmx_to_sfcase(writer_payload)
+    # elif vmx_mode == 'sfcase':
+    #     # Set case Here
+    #     try:
+    #         write_vm = sub_salesforce_case.vmx_to_sfcase(writer_payload)
 
-        except Exception as e:
-            logger.error(e)
-            logger.error('Failed to activate sfcase function')
-            return {'result':'Failed to activate sfcase function'}
+    #     except Exception as e:
+    #         logger.error(e)
+    #         logger.error('Failed to activate sfcase function')
+    #         return {'result':'Failed to activate sfcase function'}
 
-    elif vmx_mode == 'sfother':
-        # Set Task Here
-        try:
-            write_vm = sub_salesforce_other.vmx_to_sfother(writer_payload)
+    # elif vmx_mode == 'sfother':
+    #     # Set Task Here
+    #     try:
+    #         write_vm = sub_salesforce_other.vmx_to_sfother(writer_payload)
 
-        except Exception as e:
-            logger.error(e)
-            logger.error('Failed to activate sfother function')
-            return {'result':'Failed to activate sfother function'}
+    #     except Exception as e:
+    #         logger.error(e)
+    #         logger.error('Failed to activate sfother function')
+    #         return {'result':'Failed to activate sfother function'}
 
     elif vmx_mode == 'other':
         # Set other Here
